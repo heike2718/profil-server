@@ -1,0 +1,79 @@
+---
+openapi: 3.0.1
+info:
+  title: Generated API
+  version: "1.0"
+paths:
+  /profil-api/auth/login:
+    get:
+      responses:
+        200:
+          description: OK
+          content:
+             application/json:
+                schema:
+                   type: object
+                   properties:
+                      message:
+                         type: object
+                         properties:
+                            level:
+                               type: string
+                            message:
+                               type: string
+                      data:
+                         type: object
+    parameters:
+    - name: sessionid
+      in: cookie
+      schema:
+        type: string
+  /profil-api/auth/session:
+    post:
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        200:
+          description: OK
+          content:
+             application/json:
+                schema:
+                   type: object
+                   properties:
+                      message:
+                         type: object
+                         properties:
+                            level:
+                               type: string
+                            message:
+                               type: string
+                      data:
+                         type: object
+    parameters:
+    - name: sessionid
+      in: cookie
+      schema:
+        type: string
+  /profil-api/version:
+    get:
+      responses:
+        200:
+          description: OK
+          content:
+             application/json:
+                schema:
+                   type: object
+                   properties:
+                      message:
+                         type: object
+                         properties:
+                            level:
+                               type: string
+                            message:
+                               type: string
+                      data:
+                         type: object
+
