@@ -13,6 +13,8 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 /**
  * SecureHeadersFilter
  */
@@ -21,6 +23,12 @@ import javax.ws.rs.ext.Provider;
 public class SecureHeadersFilter implements ContainerResponseFilter {
 
 	private static final String CONTENT_SECURITY_POLICY = "Content-Security-Policy";
+
+	@ConfigProperty(name = "cors.allow-origin")
+	String allowOriginHeaderValue;
+
+	@ConfigProperty(name = "cors.access-control-max-age")
+	int accessControlMaxAge;
 
 	@Override
 	public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) throws IOException {
@@ -54,7 +62,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		if (headers.get("Access-Control-Allow-Origin") == null) {
 
-			headers.add("Access-Control-Allow-Origin", "*");
+			headers.add("Access-Control-Allow-Origin", allowOriginHeaderValue);
 		}
 
 		if (headers.get("Vary") == null) {
@@ -74,7 +82,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		if (headers.get("Access-Control-Max-Age") == null) {
 
-			headers.add("Access-Control-Max-Age", "3600");
+			headers.add("Access-Control-Max-Age", "" + accessControlMaxAge);
 		}
 
 		if (headers.get("Access-Control-Allow-Headers") == null) {

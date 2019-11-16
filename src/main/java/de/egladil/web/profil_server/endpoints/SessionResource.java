@@ -42,11 +42,25 @@ public class SessionResource {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SessionResource.class);
 
+	private static final String STAGE_DEV = "dev";
+
 	@ConfigProperty(name = "auth-app.url")
 	String authAppUrl;
 
 	@ConfigProperty(name = "auth.redirect-url.login")
 	String loginRedirectUrl;
+
+	@ConfigProperty(name = "sessioncookie.secure")
+	boolean sessioncookieSecure;
+
+	@ConfigProperty(name = "sessioncookie.httpOnly")
+	boolean sessionCookieHttpOnly;
+
+	@ConfigProperty(name = "sessioncookie.domain")
+	String domain;
+
+	@ConfigProperty(name = "stage")
+	String stage;
 
 	@Inject
 	ClientAccessTokenService clientAccessTokenService;
@@ -93,19 +107,23 @@ public class SessionResource {
 
 		LOG.debug("SessionResource === (3) ===");
 
+		if (!STAGE_DEV.equals(stage)) {
+
+			userSession.removeSessionId();
+		}
 		AuthenticatedUser authUser = new AuthenticatedUser(userSession, user);
 
 		// @formatter:off
 		NewCookie sessionCookie = new NewCookie(SessionUtils.NAME_SESSIONID_COOKIE,
 			userSession.getSessionId(),
 			null,
-			null,
+			domain,
 			1,
 			null,
 			7200,
 			null,
-			false,  // nur in dev!!!
-			true);
+			sessioncookieSecure,
+			sessionCookieHttpOnly);
 //		 @formatter:on
 		// NewCookie sessionCookie = new NewCookie("JSESSIONID", userSession.getSessionId());
 

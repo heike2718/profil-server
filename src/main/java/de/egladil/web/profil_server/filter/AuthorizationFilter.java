@@ -28,6 +28,7 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,13 @@ import de.egladil.web.profil_server.utils.SessionUtils;
 public class AuthorizationFilter implements ContainerRequestFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthorizationFilter.class);
+
+	private static final String STAGE_DEV = "dev";
+
+	private static final String AUTH_HEADER = "Authorization";
+
+	@ConfigProperty(name = "stage")
+	String stage;
 
 	@Context
 	ResourceInfo resourceInfo;
@@ -67,17 +75,7 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 				throw new ForbiddenException();
 			}
 
-			Map<String, Cookie> cookies = requestContext.getCookies();
-
-			Cookie sessionCookie = cookies.get(SessionUtils.NAME_SESSIONID_COOKIE);
-
-			if (sessionCookie == null) {
-
-				LOG.error("{}: Request ohne {}-Cookie", requestContext.getUriInfo(), SessionUtils.NAME_SESSIONID_COOKIE);
-				throw new AuthException("Sie haben keine Berechtigung");
-			}
-
-			String sessionId = sessionCookie.getValue();
+			String sessionId = getSessionId(requestContext);
 
 			UserSession userSession = sessionService.getSession(sessionId);
 
@@ -113,5 +111,31 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 		}
 
 		LOG.info("PermitAll for method={}", method);
+	}
+
+	private String getSessionId(final ContainerRequestContext requestContext) {
+
+		if (!STAGE_DEV.equals(stage)) {
+
+			Map<String, Cookie> cookies = requestContext.getCookies();
+
+			Cookie sessionCookie = cookies.get(SessionUtils.NAME_SESSIONID_COOKIE);
+
+			if (sessionCookie == null) {
+
+				LOG.error("{}: Request ohne {}-Cookie", requestContext.getUriInfo(), SessionUtils.NAME_SESSIONID_COOKIE);
+				return null;
+			}
+		}
+
+		String authHeader = requestContext.getHeaderString(AUTH_HEADER);
+
+		if (authHeader == null) {
+
+			return null;
+		}
+
+		return authHeader.substring(7);
+
 	}
 }

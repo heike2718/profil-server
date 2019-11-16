@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public class UserSession {
 
-	@JsonIgnore
 	private String sessionId;
 
 	@JsonIgnore
@@ -65,6 +64,11 @@ public class UserSession {
 	public void setUuid(final String uuid) {
 
 		this.uuid = uuid;
+	}
+
+	public void removeSessionId() {
+
+		this.sessionId = null;
 	}
 
 	@Override
