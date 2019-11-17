@@ -20,21 +20,22 @@ import de.egladil.web.commons_validation.payload.LogEntry;
 import de.egladil.web.commons_validation.payload.TSLogLevel;
 
 /**
- * ErrorLogResource
+ * LogResource
  */
 @RequestScoped
-@Path("error")
+@Path("log")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class ErrorLogResource {
+public class LogResource {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ErrorLogResource.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LogResource.class);
 
 	@POST
 	@PermitAll
-	public Response logError(final LogEntry logEntry) {
+	public Response log(final LogEntry logEntry) {
 
 		TSLogLevel level = logEntry.getLevel();
+		System.out.println(level);
 
 		switch (level) {
 

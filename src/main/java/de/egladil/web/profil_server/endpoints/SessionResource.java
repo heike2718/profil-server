@@ -9,9 +9,11 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
@@ -27,6 +29,8 @@ import de.egladil.web.commons_validation.payload.ResponsePayload;
 import de.egladil.web.profil_server.domain.AuthenticatedUser;
 import de.egladil.web.profil_server.domain.User;
 import de.egladil.web.profil_server.domain.UserSession;
+import de.egladil.web.profil_server.error.AuthException;
+import de.egladil.web.profil_server.service.AuthenticatedUserService;
 import de.egladil.web.profil_server.service.ClientAccessTokenService;
 import de.egladil.web.profil_server.service.SessionService;
 import de.egladil.web.profil_server.service.UserService;
@@ -50,17 +54,11 @@ public class SessionResource {
 	@ConfigProperty(name = "auth.redirect-url.login")
 	String loginRedirectUrl;
 
-	@ConfigProperty(name = "sessioncookie.secure")
-	boolean sessioncookieSecure;
-
-	@ConfigProperty(name = "sessioncookie.httpOnly")
-	boolean sessionCookieHttpOnly;
-
-	@ConfigProperty(name = "sessioncookie.domain")
-	String domain;
-
 	@ConfigProperty(name = "stage")
 	String stage;
+
+	@Inject
+	AuthenticatedUserService authenticatedUserService;
 
 	@Inject
 	ClientAccessTokenService clientAccessTokenService;
@@ -97,49 +95,46 @@ public class SessionResource {
 	@PermitAll
 	public Response createSession(final String jwt) {
 
-		LOG.debug("SessionResource === (1) " + jwt + " ===");
-
 		UserSession userSession = sessionService.createUserSession(jwt);
-
-		LOG.debug("SessionResource === (2) ===");
+		NewCookie sessionCookie = authenticatedUserService.createSessionCookie(userSession.getSessionId());
 
 		User user = userService.getUser(userSession.getUuid());
-
-		LOG.debug("SessionResource === (3) ===");
-
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.removeSessionId();
-		}
-		AuthenticatedUser authUser = new AuthenticatedUser(userSession, user);
-
-		// @formatter:off
-		NewCookie sessionCookie = new NewCookie(SessionUtils.NAME_SESSIONID_COOKIE,
-			userSession.getSessionId(),
-			null,
-			domain,
-			1,
-			null,
-			7200,
-			null,
-			sessioncookieSecure,
-			sessionCookieHttpOnly);
-//		 @formatter:on
-		// NewCookie sessionCookie = new NewCookie("JSESSIONID", userSession.getSessionId());
-
-		// TODO: X-XSRF-Cookie anhängen
+		AuthenticatedUser authUser = authenticatedUserService.createAuthenticatedUser(userSession, user);
 
 		ResponsePayload payload = new ResponsePayload(MessagePayload.info("OK"), authUser);
+
+		// TODO: X-XSRF-Cookie anhängen
 
 		return Response.ok(payload).cookie(sessionCookie).build();
 	}
 
-	public Response invalidateSession(@CookieParam(value = "sessionid") final String sessionId) {
+	@DELETE
+	@Path("/logout")
+	@PermitAll
+	public Response logout(@CookieParam(value = "sessionid") final String sessionId) {
 
-		sessionService.invalidate(sessionId);
+		if (sessionId != null) {
+
+			sessionService.invalidate(sessionId);
+		}
 
 		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt")))
 			.cookie(SessionUtils.createSessionInvalidatedCookie()).build();
 
+	}
+
+	@DELETE
+	@Path("/dev/logout/{sessionid}")
+	@PermitAll
+	public Response logoutDev(@PathParam(value = "sessionid") final String sessionId) {
+
+		if (!STAGE_DEV.equals(stage)) {
+
+			throw new AuthException("Diese URL darf nur im DEV-Mode aufgerufen werden");
+		}
+
+		sessionService.invalidate(sessionId);
+
+		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt"))).build();
 	}
 }

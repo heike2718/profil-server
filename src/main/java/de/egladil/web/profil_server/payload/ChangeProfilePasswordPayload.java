@@ -4,8 +4,6 @@
 // =====================================================
 package de.egladil.web.profil_server.payload;
 
-import javax.validation.constraints.NotNull;
-
 import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
 
 /**
@@ -13,11 +11,15 @@ import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
  */
 public class ChangeProfilePasswordPayload {
 
-	@NotNull
-	private OAuthClientCredentials clientCredentials;
+	private final OAuthClientCredentials clientCredentials;
 
-	@NotNull
-	private ProfilePasswordPayload passwordPayload;
+	private final ProfilePasswordPayload passwordPayload;
+
+	public ChangeProfilePasswordPayload(final OAuthClientCredentials clientCredentials, final ProfilePasswordPayload passwordPayload) {
+
+		this.clientCredentials = clientCredentials;
+		this.passwordPayload = passwordPayload;
+	}
 
 	public OAuthClientCredentials getClientCredentials() {
 

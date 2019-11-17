@@ -4,6 +4,8 @@
 // =====================================================
 package de.egladil.web.profil_server.domain;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * User
  */
@@ -62,6 +64,20 @@ public class User {
 	public void setNachname(final String nachname) {
 
 		this.nachname = nachname;
+	}
+
+	private boolean hasName() {
+
+		return StringUtils.isNotBlank(vorname) || StringUtils.isNotBlank(nachname);
+	}
+
+	public String getFullName() {
+
+		if (!hasName()) {
+
+			return "";
+		}
+		return vorname + " " + nachname;
 	}
 
 	@Override

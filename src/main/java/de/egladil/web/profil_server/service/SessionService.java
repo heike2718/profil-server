@@ -13,18 +13,21 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.jwt.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +53,8 @@ public class SessionService {
 
 	private static final int SESSION_IDLE_TIMEOUT_MINUTES = 15;
 
+	public static final String PROPERTY_NAME_SESSION = "usersession";
+
 	private ConcurrentHashMap<String, UserSession> sessions = new ConcurrentHashMap<>();
 
 	@Inject
@@ -63,27 +68,34 @@ public class SessionService {
 
 	public UserSession createUserSession(final String jwt) {
 
+		// System.err.println(jwt);
+
 		try {
 
 			DecodedJWT decodedJWT = jwtService.verify(jwt, getPublicKey());
-			String uuid = decodedJWT.getSubject();
-			String roles = decodedJWT.getClaim(Claims.groups.name()).asString();
-			String fullName = decodedJWT.getClaim(Claims.full_name.name()).asString();
 
-			LOG.debug("SessionService === (1) " + uuid + " ===");
+			String uuid = decodedJWT.getSubject();
+
+			Claim groupsClaim = decodedJWT.getClaim(Claims.groups.name());
+			String[] rolesArr = groupsClaim.asArray(String.class);
+
+			String roles = null;
+
+			if (rolesArr != null) {
+
+				roles = StringUtils.join(rolesArr, ",");
+			}
+
+			String fullName = decodedJWT.getClaim(Claims.full_name.name()).asString();
 
 			Optional<ResourceOwner> optResourceOwner = resourceOwnerDao.findByUuid(uuid);
 
 			if (optResourceOwner.isPresent()) {
 
-				LOG.debug("SessionService === (2) ===");
-
 				byte[] sessionIdBase64 = Base64.getEncoder().encode(cryptoService.generateSessionId().getBytes());
 				String sesionId = new String(sessionIdBase64);
 
-				LOG.debug("SessionService === (3) ===");
-
-				UserSession userSession = UserSession.create(sesionId, roles, fullName);
+				UserSession userSession = UserSession.create(sesionId, roles, fullName, createUserIdReference());
 
 				userSession.setExpiresAt(getSessionTimeout());
 				userSession.setUuid(uuid);
@@ -115,6 +127,18 @@ public class SessionService {
 
 		}
 
+	}
+
+	public Optional<UserSession> findSessionByIdReference(final String idReference) {
+
+		return this.sessions.values().stream().filter(s -> idReference.equals(s.getIdReference())).findFirst();
+
+	}
+
+	private String createUserIdReference() {
+
+		UUID uuid = UUID.randomUUID();
+		return "" + uuid.getMostSignificantBits();
 	}
 
 	/**

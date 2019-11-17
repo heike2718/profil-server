@@ -16,18 +16,21 @@ public class UserSession {
 	@JsonIgnore
 	private String uuid;
 
+	private String idReference;
+
 	private String roles;
 
 	private String fullName;
 
 	private long expiresAt;
 
-	public static UserSession create(final String sessionId, final String roles, final String fullName) {
+	public static UserSession create(final String sessionId, final String roles, final String fullName, final String idReference) {
 
 		UserSession result = new UserSession();
 		result.sessionId = sessionId;
 		result.roles = roles;
 		result.fullName = fullName;
+		result.idReference = idReference;
 		return result;
 	}
 
@@ -74,7 +77,13 @@ public class UserSession {
 	@Override
 	public String toString() {
 
-		return "UserSession [roles=" + roles + ", fullName=" + fullName + ", expiresAt=" + expiresAt + "]";
+		return "UserSession [roles=" + roles + ", fullName=" + fullName + ", expiresAt=" + expiresAt + ", uuid="
+			+ uuid.substring(0, 8) + "]";
+	}
+
+	public String getIdReference() {
+
+		return idReference;
 	}
 
 }

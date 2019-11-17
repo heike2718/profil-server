@@ -6,6 +6,7 @@ package de.egladil.web.profil_server.error;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
@@ -53,8 +54,19 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 			return Response.status(Response.Status.FORBIDDEN).entity(payload).build();
 		}
 
-		// TODO Auto-generated method stub
-		return null;
+		if (exception instanceof ProfilserverRuntimeException) {
+
+			// wurde schon geloggt
+		} else {
+
+			LOG.error(exception.getMessage(), exception);
+		}
+
+		ResponsePayload payload = ResponsePayload.messageOnly(MessagePayload.error(
+			"Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de"));
+
+		return Response.status(Status.INTERNAL_SERVER_ERROR).header("X-Checklisten-Error", payload.getMessage().getMessage())
+			.entity(payload).build();
 	}
 
 }
