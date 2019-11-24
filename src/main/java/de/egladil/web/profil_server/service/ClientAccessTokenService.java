@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.json.JsonObject;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
@@ -118,31 +117,4 @@ public class ClientAccessTokenService {
 		}
 
 	}
-
-	private void evaluateResponse(final String nonce, final JsonObject authResponsePayload) throws ClientAuthException {
-
-		JsonObject message = authResponsePayload.getJsonObject("message");
-		String level = message.getString("level");
-		String theMessage = message.getString("message");
-
-		if ("INFO".equals(level)) {
-
-			String responseNonce = authResponsePayload.getJsonObject("data").getString("nonce");
-
-			if (!nonce.equals(responseNonce)) {
-
-				{
-
-					LOG.warn(LogmessagePrefixes.BOT + "zurückgesendetes nonce stimmt nicht");
-					throw new ClientAuthException();
-				}
-			}
-
-		} else {
-
-			LOG.error("Authentisierung des Clients hat nicht geklappt: {} - {}", level, theMessage);
-			throw new ClientAuthException();
-		}
-	}
-
 }

@@ -10,13 +10,14 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.egladil.web.commons_net.exception.SessionExpiredException;
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.commons_validation.payload.MessagePayload;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
-import de.egladil.web.profil_server.utils.SessionUtils;
 
 /**
  * ProfilServerExceptionMapper
@@ -25,6 +26,9 @@ import de.egladil.web.profil_server.utils.SessionUtils;
 public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProfilServerExceptionMapper.class);
+
+	@ConfigProperty(name = "sessioncookie.domain")
+	String domain;
 
 	@Override
 	public Response toResponse(final Exception exception) {
@@ -44,7 +48,7 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 			LOG.warn(exception.getMessage());
 
 			return Response.status(908)
-				.entity(payload).cookie(SessionUtils.createSessionInvalidatedCookie())
+				.entity(payload).cookie(CommonHttpUtils.createSessionInvalidatedCookie(domain))
 				.build();
 		}
 
@@ -54,7 +58,7 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 			return Response.status(Response.Status.FORBIDDEN).entity(payload).build();
 		}
 
-		if (exception instanceof ProfilserverRuntimeException) {
+		if (exception instanceof ProfilserverRuntimeException || exception instanceof ClientAuthException) {
 
 			// wurde schon geloggt
 		} else {

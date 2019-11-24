@@ -4,12 +4,20 @@
 // =====================================================
 package de.egladil.web.profil_server.domain;
 
+import java.io.Serializable;
+import java.security.Principal;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * UserSession
  */
-public class UserSession {
+public class UserSession implements Principal, Serializable {
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 
 	private String sessionId;
 
@@ -84,6 +92,12 @@ public class UserSession {
 	public String getIdReference() {
 
 		return idReference;
+	}
+
+	@Override
+	public String getName() {
+
+		return uuid;
 	}
 
 }

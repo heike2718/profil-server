@@ -94,7 +94,6 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 			responseContext.getHeaders().add(CONTENT_SECURITY_POLICY, "default-src 'self'; ");
 		}
-
 	}
 
 }

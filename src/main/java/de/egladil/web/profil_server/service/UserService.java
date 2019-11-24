@@ -10,7 +10,6 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -50,12 +49,8 @@ public class UserService {
 	@SuppressWarnings("unchecked")
 	public User getUser(final String uuid) {
 
-		LOG.debug("UserService === (1) " + uuid + " ===");
-
 		OAuthClientCredentials credentials = OAuthClientCredentials.create(clientId,
 			clientSecret, null);
-
-		LOG.debug("UserService === (2) " + StringUtils.abbreviate(credentials.getClientId(), 8) + " ===");
 
 		try {
 
@@ -75,8 +70,6 @@ public class UserService {
 				user.setLoginName(data.get("loginName"));
 				user.setNachname(data.get("nachname"));
 				user.setVorname(data.get("vorname"));
-
-				LOG.debug("UserService === (3) {} ===", user);
 
 				return user;
 			}

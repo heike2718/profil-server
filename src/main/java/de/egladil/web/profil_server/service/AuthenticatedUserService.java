@@ -9,10 +9,10 @@ import javax.ws.rs.core.NewCookie;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.profil_server.domain.AuthenticatedUser;
 import de.egladil.web.profil_server.domain.User;
 import de.egladil.web.profil_server.domain.UserSession;
-import de.egladil.web.profil_server.utils.SessionUtils;
 
 /**
  * AuthenticatedUserService
@@ -73,7 +73,7 @@ public class AuthenticatedUserService {
 	public NewCookie createSessionCookie(final String sessionId) {
 
 		// @formatter:off
-		NewCookie sessionCookie = new NewCookie(SessionUtils.NAME_SESSIONID_COOKIE,
+		NewCookie sessionCookie = new NewCookie(CommonHttpUtils.NAME_SESSIONID_COOKIE,
 			sessionId,
 			null,
 			domain,

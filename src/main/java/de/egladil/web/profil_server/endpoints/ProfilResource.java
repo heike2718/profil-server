@@ -4,8 +4,8 @@
 // =====================================================
 package de.egladil.web.profil_server.endpoints;
 
+import java.security.Principal;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.security.PermitAll;
@@ -14,12 +14,14 @@ import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -41,7 +43,7 @@ import de.egladil.web.profil_server.payload.ProfileDataPayload;
 import de.egladil.web.profil_server.payload.ProfilePasswordPayload;
 import de.egladil.web.profil_server.restclient.ProfileRestClient;
 import de.egladil.web.profil_server.service.AuthenticatedUserService;
-import de.egladil.web.profil_server.service.SessionService;
+import de.egladil.web.profil_server.service.ProfilSessionService;
 
 /**
  * ProfilResource
@@ -68,24 +70,19 @@ public class ProfilResource {
 	ProfileRestClient profileRestClient;
 
 	@Inject
-	SessionService sessionService;
+	ProfilSessionService profilSessionService;
+
+	@Context
+	SecurityContext securityContext;
 
 	private ValidationDelegate validationDelegate = new ValidationDelegate();
 
 	@PUT
-	@Path("/profile/{idRef}/password")
+	@Path("/profile/password")
 	@PermitAll
-	public Response changePassword(@PathParam(value = "idRef") final String idRef, final ProfilePasswordPayload payload) {
+	public Response changePassword(final ProfilePasswordPayload payload) {
 
-		Optional<UserSession> optUserSession = sessionService.findSessionByIdReference(idRef);
-
-		if (!optUserSession.isPresent()) {
-
-			LOG.error("keine UserSession mit idReference={} vorhanden", idRef);
-			throw new AuthException("keine Berechtigung");
-		}
-
-		UserSession userSession = optUserSession.get();
+		UserSession userSession = getUserSession();
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -118,6 +115,9 @@ public class ProfilResource {
 				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, null);
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
+
+				LOG.info("{} - {}: Passwort geändert", getStringAbbreviated(userSession.getIdReference()),
+					getStringAbbreviated(userSession.getUuid()));
 				return Response.ok(mappedResponsePayload).cookie(sessionCookie).build();
 			} else {
 
@@ -129,12 +129,17 @@ public class ProfilResource {
 		} catch (ProfilserverRuntimeException e) {
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
+
+			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage());
+
 			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
 				.cookie(sessionCookie).build();
 
 		} catch (Exception e) {
 
-			LOG.error(e.getMessage(), e);
+			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
 			return Response.serverError()
@@ -156,19 +161,12 @@ public class ProfilResource {
 	 * @return         ResponsePayload mit AuthenticatedUser als data.
 	 */
 	@PUT
-	@Path("/profile/{idRef}/data")
+	@Path("/profile/data")
 	@PermitAll
-	public Response changeData(@PathParam(value = "idRef") final String idRef, final ProfileDataPayload payload) {
+	public Response changeData(final ProfileDataPayload payload) {
 
-		Optional<UserSession> optUserSession = sessionService.findSessionByIdReference(idRef);
+		UserSession userSession = getUserSession();
 
-		if (!optUserSession.isPresent()) {
-
-			LOG.error("keine UserSession mit idReference={} vorhanden", idRef);
-			throw new AuthException("keine Berechtigung");
-		}
-
-		UserSession userSession = optUserSession.get();
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -209,11 +207,16 @@ public class ProfilResource {
 				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, user);
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
+
+				LOG.info("{} - {}: Daten geändert", getStringAbbreviated(userSession.getIdReference()),
+					getStringAbbreviated(userSession.getUuid()));
+
 				return Response.ok(mappedResponsePayload).cookie(sessionCookie).build();
 
 			} else {
 
-				LOG.error("authprovider antwortete mit dem Status {}", authProviderResponse.getStatus());
+				LOG.error("{} - {}: authprovider antwortete mit dem Status {}", getStringAbbreviated(userSession.getIdReference()),
+					getStringAbbreviated(userSession.getUuid()), authProviderResponse.getStatus());
 				throw new ProfilserverRuntimeException("Die Daten konnten wegen eines Serverfehlers nicht geändert werden.");
 
 			}
@@ -221,12 +224,17 @@ public class ProfilResource {
 		} catch (ProfilserverRuntimeException e) {
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
+
+			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage());
+
 			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
 				.cookie(sessionCookie).build();
 
 		} catch (Exception e) {
 
-			LOG.error(e.getMessage(), e);
+			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
 			// Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de
 
@@ -241,5 +249,23 @@ public class ProfilResource {
 
 			clientCredentials.clean();
 		}
+	}
+
+	private UserSession getUserSession() {
+
+		Principal principal = securityContext.getUserPrincipal();
+
+		if (principal != null) {
+
+			return (UserSession) principal;
+		}
+
+		LOG.error("keine UserSession für Principal vorhanden");
+		throw new AuthException("Keine Berechtigung");
+	}
+
+	private String getStringAbbreviated(final String string) {
+
+		return StringUtils.abbreviate(string, 11);
 	}
 }

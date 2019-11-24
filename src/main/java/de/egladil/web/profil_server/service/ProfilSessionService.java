@@ -13,7 +13,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -29,13 +28,12 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.egladil.web.commons_crypto.CryptoService;
 import de.egladil.web.commons_crypto.JWTService;
 import de.egladil.web.commons_net.exception.SessionExpiredException;
 import de.egladil.web.commons_net.time.CommonTimeUtils;
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.profil_server.dao.ResourceOwnerDao;
 import de.egladil.web.profil_server.domain.ResourceOwner;
 import de.egladil.web.profil_server.domain.UserSession;
@@ -44,12 +42,12 @@ import de.egladil.web.profil_server.error.LogmessagePrefixes;
 import de.egladil.web.profil_server.error.ProfilserverRuntimeException;
 
 /**
- * SessionService
+ * ProfilSessionService
  */
 @ApplicationScoped
-public class SessionService {
+public class ProfilSessionService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ProfilSessionService.class);
 
 	private static final int SESSION_IDLE_TIMEOUT_MINUTES = 15;
 
@@ -95,22 +93,18 @@ public class SessionService {
 				byte[] sessionIdBase64 = Base64.getEncoder().encode(cryptoService.generateSessionId().getBytes());
 				String sesionId = new String(sessionIdBase64);
 
-				UserSession userSession = UserSession.create(sesionId, roles, fullName, createUserIdReference());
+				UserSession userSession = UserSession.create(sesionId, roles, fullName, CommonHttpUtils.createUserIdReference());
 
 				userSession.setExpiresAt(getSessionTimeout());
 				userSession.setUuid(uuid);
 
-				LOG.debug("SessionService === (4) " + userSession.toString() + " ===");
-
 				sessions.put(sesionId, userSession);
-
-				LOG.debug("SessionService === (5)" + new ObjectMapper().writeValueAsString(userSession) + " ===");
 
 				return userSession;
 
 			} else {
 
-				System.err.println("kein user mit uuid=" + uuid + " bekannt");
+				LOG.debug("kein user mit uuid=" + uuid + " bekannt");
 				throw new AuthException("Das hat leider nicht geklappt.");
 			}
 		} catch (TokenExpiredException e) {
@@ -121,24 +115,8 @@ public class SessionService {
 
 			LOG.warn(LogmessagePrefixes.BOT + "JWT invalid: {}", e.getMessage());
 			throw new AuthException("invalid JWT");
-		} catch (JsonProcessingException e) {
-
-			throw new ProfilserverRuntimeException("konnte payload data nicht schreiben: " + e.getMessage(), e);
-
 		}
 
-	}
-
-	public Optional<UserSession> findSessionByIdReference(final String idReference) {
-
-		return this.sessions.values().stream().filter(s -> idReference.equals(s.getIdReference())).findFirst();
-
-	}
-
-	private String createUserIdReference() {
-
-		UUID uuid = UUID.randomUUID();
-		return "" + uuid.getMostSignificantBits();
 	}
 
 	/**
@@ -170,19 +148,22 @@ public class SessionService {
 	/**
 	 * Verlängert die UserSession um Zeit, die eine neue Session gültig ist.
 	 *
-	 * @param userSession
+	 * @param  sessionId
+	 *                   die SessionId
+	 * @return           UserSession
 	 */
-	public void refresh(final String sessionId) {
+	public UserSession refresh(final String sessionId) {
 
 		UserSession userSession = sessions.get(sessionId);
 
 		if (userSession != null) {
 
 			userSession.setExpiresAt(getSessionTimeout());
+			return userSession;
 
 		} else {
 
-			throw new AuthException("keine Session mehr vorhanden");
+			throw new SessionExpiredException("keine Session mehr vorhanden");
 		}
 
 	}

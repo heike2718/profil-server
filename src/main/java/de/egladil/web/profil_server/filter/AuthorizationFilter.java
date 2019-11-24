@@ -5,7 +5,6 @@
 package de.egladil.web.profil_server.filter;
 
 import java.io.IOException;
-import java.util.Map;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
@@ -15,17 +14,18 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Cookie;
 import javax.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.egladil.web.commons_net.exception.SessionExpiredException;
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
+import de.egladil.web.profil_server.context.ProfilSecurityContext;
 import de.egladil.web.profil_server.domain.UserSession;
 import de.egladil.web.profil_server.error.AuthException;
-import de.egladil.web.profil_server.service.SessionService;
-import de.egladil.web.profil_server.utils.SessionUtils;
+import de.egladil.web.profil_server.service.ProfilSessionService;
 
 /**
  * AuthorizationFilter
@@ -37,10 +37,6 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthorizationFilter.class);
 
-	private static final String STAGE_DEV = "dev";
-
-	private static final String AUTH_HEADER = "Authorization";
-
 	@ConfigProperty(name = "stage")
 	String stage;
 
@@ -48,7 +44,7 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 	ResourceInfo resourceInfo;
 
 	@Inject
-	SessionService sessionService;
+	ProfilSessionService sessionService;
 
 	@Override
 	public void filter(final ContainerRequestContext requestContext) throws IOException {
@@ -57,53 +53,34 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
 		LOG.debug("entering AuthorizationFilter: path={}", path);
 
-		String sessionId = getSessionId(requestContext);
+		if (needsSession(path)) {
 
-		if (sessionId != null) {
+			String sessionId = CommonHttpUtils.getSessionId(requestContext, stage);
 
-			UserSession userSession = sessionService.getSession(sessionId);
+			if (sessionId != null) {
 
-			if (userSession == null) {
+				UserSession userSession = sessionService.getSession(sessionId);
 
-				LOG.warn("sessionId {} nicht bekannt oder abgelaufen");
-				throw new AuthException("keine gültige Session vorhanden");
+				if (userSession == null) {
 
+					LOG.warn("sessionId {} nicht bekannt oder abgelaufen", sessionId);
+					throw new SessionExpiredException("keine gültige Session vorhanden");
+
+				}
+
+				UserSession refreshedSession = sessionService.refresh(sessionId);
+				ProfilSecurityContext securityContext = new ProfilSecurityContext(refreshedSession);
+				requestContext.setSecurityContext(securityContext);
+
+			} else {
+
+				throw new AuthException("Keine Berechtigung");
 			}
-
-			sessionService.refresh(sessionId);
-		} else {
-
-			LOG.debug("Request ohne SessionId");
 		}
 	}
 
-	private String getSessionId(final ContainerRequestContext requestContext) {
+	private boolean needsSession(final String path) {
 
-		if (!STAGE_DEV.equals(stage)) {
-
-			Map<String, Cookie> cookies = requestContext.getCookies();
-
-			Cookie sessionCookie = cookies.get(SessionUtils.NAME_SESSIONID_COOKIE);
-
-			if (sessionCookie == null) {
-
-				LOG.error("{}: Request ohne {}-Cookie", requestContext.getUriInfo(), SessionUtils.NAME_SESSIONID_COOKIE);
-				return null;
-			}
-		}
-
-		String authHeader = requestContext.getHeaderString(AUTH_HEADER);
-
-		if (authHeader == null) {
-
-			LOG.error("{} dev: Request ohne Authorization-Header", requestContext.getUriInfo());
-
-			return null;
-		}
-
-		String sessionId = authHeader.substring(7);
-		LOG.debug("sessionId={}", sessionId);
-		return sessionId;
-
+		return path.toLowerCase().startsWith("/profiles");
 	}
 }

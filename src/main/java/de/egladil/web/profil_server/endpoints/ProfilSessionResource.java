@@ -24,6 +24,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.commons_validation.payload.MessagePayload;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
 import de.egladil.web.profil_server.domain.AuthenticatedUser;
@@ -32,19 +33,18 @@ import de.egladil.web.profil_server.domain.UserSession;
 import de.egladil.web.profil_server.error.AuthException;
 import de.egladil.web.profil_server.service.AuthenticatedUserService;
 import de.egladil.web.profil_server.service.ClientAccessTokenService;
-import de.egladil.web.profil_server.service.SessionService;
+import de.egladil.web.profil_server.service.ProfilSessionService;
 import de.egladil.web.profil_server.service.UserService;
-import de.egladil.web.profil_server.utils.SessionUtils;
 
 /**
- * SessionResource
+ * ProfilSessionResource
  */
 @RequestScoped
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
-public class SessionResource {
+public class ProfilSessionResource {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SessionResource.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ProfilSessionResource.class);
 
 	private static final String STAGE_DEV = "dev";
 
@@ -57,6 +57,9 @@ public class SessionResource {
 	@ConfigProperty(name = "stage")
 	String stage;
 
+	@ConfigProperty(name = "sessioncookie.domain")
+	String domain;
+
 	@Inject
 	AuthenticatedUserService authenticatedUserService;
 
@@ -64,7 +67,7 @@ public class SessionResource {
 	ClientAccessTokenService clientAccessTokenService;
 
 	@Inject
-	SessionService sessionService;
+	ProfilSessionService profilSessionService;
 
 	@Inject
 	UserService userService;
@@ -95,7 +98,7 @@ public class SessionResource {
 	@PermitAll
 	public Response createSession(final String jwt) {
 
-		UserSession userSession = sessionService.createUserSession(jwt);
+		UserSession userSession = profilSessionService.createUserSession(jwt);
 		NewCookie sessionCookie = authenticatedUserService.createSessionCookie(userSession.getSessionId());
 
 		User user = userService.getUser(userSession.getUuid());
@@ -115,11 +118,11 @@ public class SessionResource {
 
 		if (sessionId != null) {
 
-			sessionService.invalidate(sessionId);
+			profilSessionService.invalidate(sessionId);
 		}
 
 		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt")))
-			.cookie(SessionUtils.createSessionInvalidatedCookie()).build();
+			.cookie(CommonHttpUtils.createSessionInvalidatedCookie(domain)).build();
 
 	}
 
@@ -133,7 +136,7 @@ public class SessionResource {
 			throw new AuthException("Diese URL darf nur im DEV-Mode aufgerufen werden");
 		}
 
-		sessionService.invalidate(sessionId);
+		profilSessionService.invalidate(sessionId);
 
 		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt"))).build();
 	}
