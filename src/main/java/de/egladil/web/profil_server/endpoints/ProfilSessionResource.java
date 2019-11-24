@@ -57,9 +57,6 @@ public class ProfilSessionResource {
 	@ConfigProperty(name = "stage")
 	String stage;
 
-	@ConfigProperty(name = "sessioncookie.domain")
-	String domain;
-
 	@Inject
 	AuthenticatedUserService authenticatedUserService;
 
@@ -114,7 +111,7 @@ public class ProfilSessionResource {
 	@DELETE
 	@Path("/logout")
 	@PermitAll
-	public Response logout(@CookieParam(value = "sessionid") final String sessionId) {
+	public Response logout(@CookieParam(value = CommonHttpUtils.NAME_SESSIONID_COOKIE) final String sessionId) {
 
 		if (sessionId != null) {
 
@@ -122,7 +119,7 @@ public class ProfilSessionResource {
 		}
 
 		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt")))
-			.cookie(CommonHttpUtils.createSessionInvalidatedCookie(domain)).build();
+			.cookie(CommonHttpUtils.createSessionInvalidatedCookie()).build();
 
 	}
 

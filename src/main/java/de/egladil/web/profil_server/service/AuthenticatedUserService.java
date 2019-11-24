@@ -25,15 +25,6 @@ public class AuthenticatedUserService {
 	@ConfigProperty(name = "stage")
 	String stage;
 
-	@ConfigProperty(name = "sessioncookie.secure")
-	boolean sessioncookieSecure;
-
-	@ConfigProperty(name = "sessioncookie.httpOnly")
-	boolean sessionCookieHttpOnly;
-
-	@ConfigProperty(name = "sessioncookie.domain")
-	String domain;
-
 	/**
 	 * @param  userSession
 	 *                     UserSession darf nicht null sein
@@ -75,16 +66,16 @@ public class AuthenticatedUserService {
 		// @formatter:off
 		NewCookie sessionCookie = new NewCookie(CommonHttpUtils.NAME_SESSIONID_COOKIE,
 			sessionId,
+			null, // path
+			null, // domain muss null sein, wird vom Browser anhand des restlichen Responses abgeleitet. Sonst wird das Cookie nicht gesetzt.
+			1,  // version
+			null, // comment
+			7200, // expires (minutes)
 			null,
-			domain,
-			1,
-			null,
-			7200,
-			null,
-			sessioncookieSecure,
-			sessionCookieHttpOnly);
-//		 @formatter:on
-		// NewCookie sessionCookie = new NewCookie("JSESSIONID", userSession.getSessionId());
+			true, // secure
+			true  // httpOnly
+			);
+		//@formatter:on
 
 		return sessionCookie;
 

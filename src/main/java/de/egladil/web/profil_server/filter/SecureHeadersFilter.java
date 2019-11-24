@@ -87,7 +87,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		if (headers.get("Access-Control-Allow-Headers") == null) {
 
-			headers.add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, Authorization");
+			headers.add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, Authorization,X-SESSIONID");
 		}
 
 		if (headers.get(CONTENT_SECURITY_POLICY) == null) {
