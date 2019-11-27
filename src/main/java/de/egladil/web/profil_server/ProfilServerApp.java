@@ -13,4 +13,6 @@ import javax.ws.rs.core.Application;
 @ApplicationPath("/profil-api")
 public class ProfilServerApp extends Application {
 
+	public static final String CLIENT_COOKIE_PREFIX = "PRF";
+
 }

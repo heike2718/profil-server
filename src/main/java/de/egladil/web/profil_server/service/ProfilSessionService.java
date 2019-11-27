@@ -51,8 +51,6 @@ public class ProfilSessionService {
 
 	private static final int SESSION_IDLE_TIMEOUT_MINUTES = 15;
 
-	public static final String PROPERTY_NAME_SESSION = "usersession";
-
 	private ConcurrentHashMap<String, UserSession> sessions = new ConcurrentHashMap<>();
 
 	@Inject
@@ -65,8 +63,6 @@ public class ProfilSessionService {
 	ResourceOwnerDao resourceOwnerDao;
 
 	public UserSession createUserSession(final String jwt) {
-
-		// System.err.println(jwt);
 
 		try {
 

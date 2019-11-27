@@ -20,10 +20,12 @@ import de.egladil.web.commons_net.exception.SessionExpiredException;
 import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.commons_validation.payload.MessagePayload;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
+import de.egladil.web.profil_server.ProfilServerApp;
 import de.egladil.web.profil_server.domain.UserSession;
 
 /**
  * ProfilServerExceptionMapper
+ * TODO: InvalidationCookie wieder einkommentieren!!!!
  */
 @Provider
 public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
@@ -36,12 +38,12 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 	@Override
 	public Response toResponse(final Exception exception) {
 
-		if (exception instanceof AuthException || exception instanceof SessionExpiredException) {
+		if (exception instanceof AuthException) {
 
 			ResponsePayload payload = ResponsePayload.messageOnly(MessagePayload.error(exception.getMessage()));
 			LOG.warn(exception.getMessage());
 			return Response.status(401)
-				.cookie(CommonHttpUtils.createSessionInvalidatedCookie())
+				.cookie(CommonHttpUtils.createSessionInvalidatedCookie(ProfilServerApp.CLIENT_COOKIE_PREFIX))
 				.entity(payload)
 				.build();
 		}
@@ -53,11 +55,13 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 
 			return Response.status(908)
 				.entity(payload)
-				.cookie(CommonHttpUtils.createSessionInvalidatedCookie())
+				.cookie(CommonHttpUtils.createSessionInvalidatedCookie(ProfilServerApp.CLIENT_COOKIE_PREFIX))
 				.build();
 		}
 
 		if (exception instanceof ForbiddenException) {
+
+			LOG.info(exception.getMessage(), exception);
 
 			ResponsePayload payload = ResponsePayload.messageOnly(MessagePayload.error("Zugang für alle User gesperrt"));
 			return Response.status(Response.Status.FORBIDDEN).entity(payload).build();

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.commons_validation.payload.MessagePayload;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
+import de.egladil.web.profil_server.ProfilServerApp;
 import de.egladil.web.profil_server.domain.AuthenticatedUser;
 import de.egladil.web.profil_server.domain.User;
 import de.egladil.web.profil_server.domain.UserSession;
@@ -111,7 +112,8 @@ public class ProfilSessionResource {
 	@DELETE
 	@Path("/logout")
 	@PermitAll
-	public Response logout(@CookieParam(value = CommonHttpUtils.NAME_SESSIONID_COOKIE) final String sessionId) {
+	public Response logout(@CookieParam(
+		value = ProfilServerApp.CLIENT_COOKIE_PREFIX + CommonHttpUtils.NAME_SESSIONID_COOKIE) final String sessionId) {
 
 		if (sessionId != null) {
 
@@ -119,7 +121,7 @@ public class ProfilSessionResource {
 		}
 
 		return Response.ok(ResponsePayload.messageOnly(MessagePayload.info("Sie haben sich erfolreich ausgeloggt")))
-			.cookie(CommonHttpUtils.createSessionInvalidatedCookie()).build();
+			.cookie(CommonHttpUtils.createSessionInvalidatedCookie(ProfilServerApp.CLIENT_COOKIE_PREFIX)).build();
 
 	}
 
