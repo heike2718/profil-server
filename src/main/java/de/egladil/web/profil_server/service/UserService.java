@@ -8,8 +8,10 @@ import java.util.Map;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -75,6 +77,21 @@ public class UserService {
 			}
 
 			return null;
+		} catch (WebApplicationException e) {
+
+			Response response = e.getResponse();
+			int status = response.getStatus();
+
+			if (status == 401) {
+
+				LOG.error("Authentisierungsfehler für Client {} gegenüber dem authprovider", StringUtils.abbreviate(clientId, 11));
+				throw new ProfilserverRuntimeException("Authentisierungsfehler für Client");
+			}
+
+			LOG.error("Statuscode {} beim Holen des Users", status);
+
+			throw new ProfilserverRuntimeException("Unerwarteter Response-Status beim Holen des Users.");
+
 		} catch (Exception e) {
 
 			LOG.error(e.getMessage(), e);

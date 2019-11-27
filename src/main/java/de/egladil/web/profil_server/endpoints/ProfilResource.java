@@ -116,7 +116,7 @@ public class ProfilResource {
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
 
-				LOG.info("{} - {}: Passwort geändert", getStringAbbreviated(userSession.getIdReference()),
+				LOG.info("idRef={} - UUID={}: Passwort geändert", getStringAbbreviated(userSession.getIdReference()),
 					getStringAbbreviated(userSession.getUuid()));
 				return Response.ok(mappedResponsePayload).cookie(sessionCookie).build();
 			} else {
@@ -130,7 +130,7 @@ public class ProfilResource {
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
 
-			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage());
 
 			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
@@ -138,7 +138,7 @@ public class ProfilResource {
 
 		} catch (Exception e) {
 
-			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
@@ -208,14 +208,15 @@ public class ProfilResource {
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
 
-				LOG.info("{} - {}: Daten geändert", getStringAbbreviated(userSession.getIdReference()),
+				LOG.info("idRef={} - UUID={}: Daten geändert", getStringAbbreviated(userSession.getIdReference()),
 					getStringAbbreviated(userSession.getUuid()));
 
 				return Response.ok(mappedResponsePayload).cookie(sessionCookie).build();
 
 			} else {
 
-				LOG.error("{} - {}: authprovider antwortete mit dem Status {}", getStringAbbreviated(userSession.getIdReference()),
+				LOG.error("idRef={} - UUID={}: authprovider antwortete mit dem Status {}",
+					getStringAbbreviated(userSession.getIdReference()),
 					getStringAbbreviated(userSession.getUuid()), authProviderResponse.getStatus());
 				throw new ProfilserverRuntimeException("Die Daten konnten wegen eines Serverfehlers nicht geändert werden.");
 
@@ -225,7 +226,7 @@ public class ProfilResource {
 
 			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
 
-			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage());
 
 			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
@@ -233,7 +234,7 @@ public class ProfilResource {
 
 		} catch (Exception e) {
 
-			LOG.error("{} - {}: {}", getStringAbbreviated(userSession.getIdReference()),
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
 			// Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de

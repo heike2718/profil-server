@@ -1,1 +1,5 @@
 curl -X POST -H 'Accept: application/json' -H 'Content-Type: text/plain' -i http://localhost:9600/profil-api/auth/session --data 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJiMTQyYjRkMS1hYmVmLTRkMjktODMxNy0wMGJhN2I5OTVjNjkiLCJmdWxsX25hbWUiOiJHZW5pYWxlIEdlbmlhbGUgSmF2YS1FbnR3aWNrbGVyaW4iLCJpc3MiOiJoZWlrZTI3MTgvYXV0aHByb3ZpZGVyIiwiZ3JvdXBzIjpbIlNUQU5EQVJEIl0sImV4cCI6MTU3MzQwNDM1NywiaWF0IjoxNTczMzk3MTU3fQ.bghX7IxnLMePRIRqTl9lcNwHy5cuqpodyG--k5d4rQipuQ07MXMjW2nGdp0vHhwYwmvOMbmFBRFuXGkxM7RtPM2fBEj91SgK5rH5Hu7yV2Udj9bv0ev4EbOdQMG5vhMET9Zx6_F2KV4fIvaYI-9JNg2ASfjHJVjmdXmOzqYNvfV4BRZV_1yScucerJw_Reu7lG7JwInOw24KzmNlIrtVqEkht7lTThvkC8J91FK1QJ1VeVWInxJX9dlMhybC3gWaKu5FGr0EYYmWVOG34g9Q7pcKLmJHTOuxHS22vpsSfffcj6lauttIs6eDcMVGUDFSZSYqdVDr0QR4SbbQNKCgAg'
+
+curl -X GET -H 'Accept: application/json' -i http://localhost:9600/profil-api/version
+
+curl -X GET -H 'Accept: application/json' https://opa-wetterwachs.de/profil-api/version

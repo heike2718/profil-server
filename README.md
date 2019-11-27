@@ -1,4 +1,6 @@
 # profil-server
 
 
-Backend zur Pflege der Benutzerdaten.
+Backend zur Pflege der eigenen Benutzerdaten.
+
+
