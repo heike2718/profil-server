@@ -56,6 +56,11 @@ public class ProfilResource {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProfilResource.class);
 
+	private static final String STAGE_DEV = "dev";
+
+	@ConfigProperty(name = "stage")
+	String stage;
+
 	@ConfigProperty(name = "auth.client-id")
 	String clientId;
 
@@ -83,6 +88,12 @@ public class ProfilResource {
 	public Response changePassword(final ProfilePasswordPayload payload) {
 
 		UserSession userSession = getUserSession();
+
+		if (!STAGE_DEV.equals(stage)) {
+
+			userSession.clearSessionId();
+		}
+
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -166,6 +177,11 @@ public class ProfilResource {
 	public Response changeData(final ProfileDataPayload payload) {
 
 		UserSession userSession = getUserSession();
+
+		if (!STAGE_DEV.equals(stage)) {
+
+			userSession.clearSessionId();
+		}
 
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 

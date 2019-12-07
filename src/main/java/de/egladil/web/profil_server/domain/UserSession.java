@@ -19,7 +19,6 @@ public class UserSession implements Principal, Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@JsonIgnore
 	private String sessionId;
 
 	@JsonIgnore
@@ -99,6 +98,11 @@ public class UserSession implements Principal, Serializable {
 	public String getName() {
 
 		return uuid;
+	}
+
+	public void clearSessionId() {
+
+		this.sessionId = null;
 	}
 
 }
