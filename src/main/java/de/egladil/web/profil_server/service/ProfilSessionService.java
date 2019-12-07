@@ -89,10 +89,10 @@ public class ProfilSessionService {
 				byte[] sessionIdBase64 = Base64.getEncoder().encode(cryptoService.generateSessionId().getBytes());
 				String sesionId = new String(sessionIdBase64);
 
-				UserSession userSession = UserSession.create(sesionId, roles, fullName, CommonHttpUtils.createUserIdReference());
-
-				userSession.setExpiresAt(getSessionTimeout());
+				UserSession userSession = UserSession.create(sesionId, roles, fullName,
+					CommonHttpUtils.createUserIdReference());
 				userSession.setUuid(uuid);
+				userSession.setExpiresAt(getSessionTimeout());
 
 				sessions.put(sesionId, userSession);
 
