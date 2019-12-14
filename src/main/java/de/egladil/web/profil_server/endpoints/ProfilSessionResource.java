@@ -47,8 +47,6 @@ public class ProfilSessionResource {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProfilSessionResource.class);
 
-	private static final String STAGE_DEV = "dev";
-
 	@ConfigProperty(name = "auth-app.url")
 	String authAppUrl;
 
@@ -102,11 +100,6 @@ public class ProfilSessionResource {
 		User user = userService.getUser(userSession.getUuid());
 		AuthenticatedUser authUser = authenticatedUserService.createAuthenticatedUser(userSession, user);
 
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.clearSessionId();
-		}
-
 		ResponsePayload payload = new ResponsePayload(MessagePayload.info("OK"), authUser);
 
 		// TODO: X-XSRF-Cookie anhängen
@@ -135,7 +128,7 @@ public class ProfilSessionResource {
 	@PermitAll
 	public Response logoutDev(@PathParam(value = "sessionid") final String sessionId) {
 
-		if (!STAGE_DEV.equals(stage)) {
+		if (!ProfilServerApp.STAGE_DEV.equals(stage)) {
 
 			throw new AuthException("Diese URL darf nur im DEV-Mode aufgerufen werden");
 		}

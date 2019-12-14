@@ -28,6 +28,7 @@ import de.egladil.web.profil_server.ProfilServerApp;
 import de.egladil.web.profil_server.context.ProfilSecurityContext;
 import de.egladil.web.profil_server.domain.UserSession;
 import de.egladil.web.profil_server.error.AuthException;
+import de.egladil.web.profil_server.error.LogmessagePrefixes;
 import de.egladil.web.profil_server.service.ProfilSessionService;
 
 /**
@@ -37,6 +38,8 @@ import de.egladil.web.profil_server.service.ProfilSessionService;
 @Provider
 @Priority(Priorities.AUTHORIZATION)
 public class AuthorizationFilter implements ContainerRequestFilter {
+
+	private static final String CSRF_TOKEN_HEADER = "X-XSRF-TOKEN";
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthorizationFilter.class);
 
@@ -53,36 +56,54 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 	public void filter(final ContainerRequestContext requestContext) throws IOException {
 
 		String path = requestContext.getUriInfo().getPath();
+		String method = requestContext.getMethod();
 
 		LOG.debug("entering AuthorizationFilter: path={}", path);
 
-		if (needsSession(path)) {
+		if (!"OPTIONS".equals(method)) {
 
-			if (LOG.isDebugEnabled()) {
+			if (needsSession(path)) {
 
-				logCookies(requestContext);
-			}
+				if (LOG.isDebugEnabled()) {
 
-			String sessionId = CommonHttpUtils.getSessionId(requestContext, stage, ProfilServerApp.CLIENT_COOKIE_PREFIX);
-
-			if (sessionId != null) {
-
-				UserSession userSession = sessionService.getSession(sessionId);
-
-				if (userSession == null) {
-
-					LOG.warn("sessionId {} nicht bekannt oder abgelaufen", sessionId);
-					throw new SessionExpiredException("keine gültige Session vorhanden");
-
+					logCookies(requestContext);
 				}
 
-				UserSession refreshedSession = sessionService.refresh(sessionId);
-				ProfilSecurityContext securityContext = new ProfilSecurityContext(refreshedSession);
-				requestContext.setSecurityContext(securityContext);
+				String csrfToken = requestContext.getHeaderString(CSRF_TOKEN_HEADER);
 
-			} else {
+				if (csrfToken == null) {
 
-				throw new AuthException("Keine Berechtigung");
+					LOG.warn(LogmessagePrefixes.BOT + "Aufruf ohne CSRF-Token: path=", path);
+					throw new AuthException("Keine Berechtigung");
+				}
+
+				String sessionId = CommonHttpUtils.getSessionId(requestContext, stage, ProfilServerApp.CLIENT_COOKIE_PREFIX);
+
+				if (sessionId != null) {
+
+					UserSession userSession = sessionService.getSession(sessionId);
+
+					if (userSession == null) {
+
+						LOG.warn("sessionId {} nicht bekannt oder abgelaufen", sessionId);
+						throw new SessionExpiredException("keine gültige Session vorhanden");
+
+					}
+
+					if (!csrfToken.equals(userSession.getCsrfToken())) {
+
+						LOG.warn(LogmessagePrefixes.BOT + "Aufruf mit falshem CSRF-Token: path=", path);
+						throw new AuthException("Keine Berechtigung");
+					}
+
+					UserSession refreshedSession = sessionService.refresh(sessionId);
+					ProfilSecurityContext securityContext = new ProfilSecurityContext(refreshedSession);
+					requestContext.setSecurityContext(securityContext);
+
+				} else {
+
+					throw new AuthException("Keine Berechtigung");
+				}
 			}
 		}
 	}
