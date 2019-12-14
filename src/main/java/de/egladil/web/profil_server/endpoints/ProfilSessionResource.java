@@ -101,9 +101,6 @@ public class ProfilSessionResource {
 		AuthenticatedUser authUser = authenticatedUserService.createAuthenticatedUser(userSession, user);
 
 		ResponsePayload payload = new ResponsePayload(MessagePayload.info("OK"), authUser);
-
-		// TODO: X-XSRF-Cookie anhängen
-
 		return Response.ok(payload).cookie(sessionCookie).build();
 	}
 
