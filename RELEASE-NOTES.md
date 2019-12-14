@@ -1,5 +1,11 @@
 # authprovider Release Notes
 
+__Release 1.2.0__
+
+[session expiration 0 s](https://github.com/heike2718/profil-server/issues/3)
+
+[ADD XSRF Protection](https://github.com/heike2718/profil-server/issues/4)
+
 __Release 1.1.0__
 
 [remove JWT related objects from src/app/shared/model/app-model.ts](https://github.com/heike2718/profil-app/issues/4)
