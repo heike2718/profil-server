@@ -24,6 +24,8 @@ public class UserSession implements Principal, Serializable {
 	@JsonIgnore
 	private String uuid;
 
+	private String csrfToken;
+
 	private String idReference;
 
 	private String roles;
@@ -103,6 +105,16 @@ public class UserSession implements Principal, Serializable {
 	public void clearSessionId() {
 
 		this.sessionId = null;
+	}
+
+	public String getCsrfToken() {
+
+		return csrfToken;
+	}
+
+	public void setCsrfToken(final String csrfToken) {
+
+		this.csrfToken = csrfToken;
 	}
 
 }

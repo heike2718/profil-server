@@ -7,6 +7,7 @@ package de.egladil.web.profil_server.service;
 import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.core.NewCookie;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,9 @@ public class AuthenticatedUserService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthenticatedUserService.class);
 
+	@ConfigProperty(name = "stage")
+	String stage;
+
 	/**
 	 * @param  userSession
 	 *                     UserSession darf nicht null sein
@@ -36,10 +40,18 @@ public class AuthenticatedUserService {
 		AuthenticatedUser authenticatedUser = null;
 		String fullName = user != null ? user.getFullName() : null;
 
-		authenticatedUser = new AuthenticatedUser(
-			UserSession.create(userSession.getSessionId(), userSession.getRoles(),
-				fullName, userSession.getIdReference()),
-			user);
+		UserSession theUserSession = UserSession.create(userSession.getSessionId(), userSession.getRoles(),
+			fullName, userSession.getIdReference());
+
+		theUserSession.setCsrfToken(userSession.getCsrfToken());
+		theUserSession.setExpiresAt(userSession.getExpiresAt());
+
+		if (!ProfilServerApp.STAGE_DEV.equals(stage)) {
+
+			theUserSession.clearSessionId();
+		}
+
+		authenticatedUser = new AuthenticatedUser(theUserSession, user);
 
 		return authenticatedUser;
 	}

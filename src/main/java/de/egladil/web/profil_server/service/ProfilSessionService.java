@@ -89,10 +89,13 @@ public class ProfilSessionService {
 				byte[] sessionIdBase64 = Base64.getEncoder().encode(cryptoService.generateSessionId().getBytes());
 				String sesionId = new String(sessionIdBase64);
 
+				String csrfToken = new String(Base64.getEncoder().encode(cryptoService.generateSessionId().getBytes()));
+
 				UserSession userSession = UserSession.create(sesionId, roles, fullName,
 					CommonHttpUtils.createUserIdReference());
 				userSession.setUuid(uuid);
 				userSession.setExpiresAt(getSessionTimeout());
+				userSession.setCsrfToken(csrfToken);
 
 				sessions.put(sesionId, userSession);
 
