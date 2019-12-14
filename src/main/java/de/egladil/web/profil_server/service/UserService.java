@@ -22,6 +22,7 @@ import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
 import de.egladil.web.profil_server.domain.User;
 import de.egladil.web.profil_server.error.ProfilserverRuntimeException;
+import de.egladil.web.profil_server.payload.SelectProfilePayload;
 import de.egladil.web.profil_server.restclient.ProfileRestClient;
 
 /**
@@ -56,7 +57,8 @@ public class UserService {
 
 		try {
 
-			Response response = profileRestClient.getUserProfile(uuid, credentials);
+			SelectProfilePayload selectPayload = SelectProfilePayload.create(credentials, uuid);
+			Response response = profileRestClient.getUserProfile(selectPayload);
 
 			LOG.debug("UserService === (3) ===");
 
