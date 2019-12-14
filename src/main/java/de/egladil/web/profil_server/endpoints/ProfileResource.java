@@ -302,9 +302,7 @@ public class ProfileResource {
 			LOG.debug("Response-Status={}", authProviderResponse.getStatus());
 
 			ResponsePayload responsePayload = authProviderResponse.readEntity(ResponsePayload.class);
-			@SuppressWarnings("unchecked")
-			Map<String, String> dataMap = (Map<String, String>) responsePayload.getData();
-			String nonce = dataMap.get("nonce");
+			String nonce = (String) responsePayload.getData();
 
 			if (!expectedNonce.equals(nonce)) {
 
