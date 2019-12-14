@@ -4,6 +4,8 @@
 // =====================================================
 package de.egladil.web.profil_server.payload;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
 
 /**
@@ -11,24 +13,21 @@ import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
  */
 public class ChangeProfilePasswordPayload {
 
-	private final OAuthClientCredentials clientCredentials;
+	@JsonProperty
+	private OAuthClientCredentials clientCredentials;
 
-	private final ProfilePasswordPayload passwordPayload;
+	@JsonProperty
+	private ProfilePasswordPayload passwordPayload;
 
-	public ChangeProfilePasswordPayload(final OAuthClientCredentials clientCredentials, final ProfilePasswordPayload passwordPayload) {
+	@JsonProperty
+	private String uuid;
 
-		this.clientCredentials = clientCredentials;
-		this.passwordPayload = passwordPayload;
+	public static ChangeProfilePasswordPayload create(final OAuthClientCredentials clientCredentials, final ProfilePasswordPayload passwordPayload, final String uuid) {
+
+		ChangeProfilePasswordPayload result = new ChangeProfilePasswordPayload();
+		result.clientCredentials = clientCredentials;
+		result.passwordPayload = passwordPayload;
+		result.uuid = uuid;
+		return result;
 	}
-
-	public OAuthClientCredentials getClientCredentials() {
-
-		return clientCredentials;
-	}
-
-	public ProfilePasswordPayload getPasswordPayload() {
-
-		return passwordPayload;
-	}
-
 }
