@@ -2,7 +2,7 @@
 
 __Release 1.3.0__
 
-[session expiration 0 s](https://github.com/heike2718/profil-server/issues/3)
+[REST Schnittstellen zum Löschen eines Benutzerkontos](https://github.com/heike2718/profil-server/issues/9)
 
 __Release 1.2.0__
 
