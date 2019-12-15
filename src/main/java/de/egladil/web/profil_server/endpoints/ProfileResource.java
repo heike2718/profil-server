@@ -13,6 +13,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -48,6 +49,7 @@ import de.egladil.web.profil_server.payload.SelectProfilePayload;
 import de.egladil.web.profil_server.restclient.ProfileRestClient;
 import de.egladil.web.profil_server.service.AuthenticatedUserService;
 import de.egladil.web.profil_server.service.ProfilSessionService;
+import de.egladil.web.profil_server.service.UserService;
 
 /**
  * ProfileResource
@@ -73,6 +75,9 @@ public class ProfileResource {
 
 	@Inject
 	AuthenticatedUserService authentiatedUserService;
+
+	@Inject
+	UserService userService;
 
 	@Inject
 	@RestClient
@@ -351,6 +356,22 @@ public class ProfileResource {
 
 			clientCredentials.clean();
 		}
+	}
+
+	@GET
+	@Path("/profile")
+	@PermitAll
+	public Response reloadUser() {
+
+		UserSession userSession = getUserSession();
+
+		User user = userService.getUser(userSession.getUuid());
+
+		AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, user);
+
+		ResponsePayload responsePayload = new ResponsePayload(MessagePayload.info("OK"), responseData);
+
+		return Response.ok(responsePayload).build();
 	}
 
 	private UserSession getUserSession() {
