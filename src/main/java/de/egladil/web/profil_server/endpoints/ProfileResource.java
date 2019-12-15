@@ -62,8 +62,6 @@ public class ProfileResource {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProfileResource.class);
 
-	private static final String STAGE_DEV = "dev";
-
 	@ConfigProperty(name = "stage")
 	String stage;
 
@@ -98,11 +96,6 @@ public class ProfileResource {
 
 		UserSession userSession = getUserSession();
 
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.clearSessionId();
-		}
-
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -133,7 +126,8 @@ public class ProfileResource {
 
 			if (authProviderResponse.getStatus() == 200) {
 
-				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, null);
+				User user = userService.getUser(userSession.getUuid());
+				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, user);
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
 
@@ -206,11 +200,6 @@ public class ProfileResource {
 	public Response changeData(final ProfileDataPayload payload) {
 
 		UserSession userSession = getUserSession();
-
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.clearSessionId();
-		}
 
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
