@@ -12,6 +12,8 @@ import javax.annotation.security.PermitAll;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -27,10 +29,12 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.egladil.web.commons_net.utils.CommonHttpUtils;
 import de.egladil.web.commons_validation.ValidationDelegate;
 import de.egladil.web.commons_validation.payload.MessagePayload;
 import de.egladil.web.commons_validation.payload.OAuthClientCredentials;
 import de.egladil.web.commons_validation.payload.ResponsePayload;
+import de.egladil.web.profil_server.ProfilServerApp;
 import de.egladil.web.profil_server.domain.AuthenticatedUser;
 import de.egladil.web.profil_server.domain.User;
 import de.egladil.web.profil_server.domain.UserSession;
@@ -41,22 +45,22 @@ import de.egladil.web.profil_server.payload.ChangeProfileDataPayload;
 import de.egladil.web.profil_server.payload.ChangeProfilePasswordPayload;
 import de.egladil.web.profil_server.payload.ProfileDataPayload;
 import de.egladil.web.profil_server.payload.ProfilePasswordPayload;
+import de.egladil.web.profil_server.payload.SelectProfilePayload;
 import de.egladil.web.profil_server.restclient.ProfileRestClient;
 import de.egladil.web.profil_server.service.AuthenticatedUserService;
 import de.egladil.web.profil_server.service.ProfilSessionService;
+import de.egladil.web.profil_server.service.UserService;
 
 /**
- * ProfilResource
+ * ProfileResource
  */
 @RequestScoped
 @Path("profiles")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class ProfilResource {
+public class ProfileResource {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ProfilResource.class);
-
-	private static final String STAGE_DEV = "dev";
+	private static final Logger LOG = LoggerFactory.getLogger(ProfileResource.class);
 
 	@ConfigProperty(name = "stage")
 	String stage;
@@ -69,6 +73,9 @@ public class ProfilResource {
 
 	@Inject
 	AuthenticatedUserService authentiatedUserService;
+
+	@Inject
+	UserService userService;
 
 	@Inject
 	@RestClient
@@ -89,11 +96,6 @@ public class ProfilResource {
 
 		UserSession userSession = getUserSession();
 
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.clearSessionId();
-		}
-
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -103,9 +105,10 @@ public class ProfilResource {
 
 			validationDelegate.check(payload, ProfilePasswordPayload.class);
 
-			ChangeProfilePasswordPayload changePasswordPayload = new ChangeProfilePasswordPayload(clientCredentials, payload);
+			ChangeProfilePasswordPayload changePasswordPayload = ChangeProfilePasswordPayload.create(clientCredentials, payload,
+				userSession.getUuid());
 
-			Response authProviderResponse = profileRestClient.changePassword(userSession.getUuid(), changePasswordPayload);
+			Response authProviderResponse = profileRestClient.changePassword(changePasswordPayload);
 
 			ResponsePayload responsePayload = authProviderResponse.readEntity(ResponsePayload.class);
 			@SuppressWarnings("unchecked")
@@ -123,7 +126,8 @@ public class ProfilResource {
 
 			if (authProviderResponse.getStatus() == 200) {
 
-				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, null);
+				User user = userService.getUser(userSession.getUuid());
+				AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, user);
 
 				ResponsePayload mappedResponsePayload = new ResponsePayload(responsePayload.getMessage(), responseData);
 
@@ -139,31 +143,50 @@ public class ProfilResource {
 
 		} catch (ProfilserverRuntimeException e) {
 
-			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
-
 			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage());
 
-			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
-				.cookie(sessionCookie).build();
+			return createProfilServerRuntimeErrorResponse(userSession, sessionCookie, e);
 
 		} catch (Exception e) {
 
 			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
-			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
-			return Response.serverError()
-				.entity(new ResponsePayload(
-					MessagePayload.error("Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de"),
-					authenticatedUser))
-				.cookie(sessionCookie).build();
+			return createUnexpectedErrorResponse(userSession, sessionCookie);
 
 		} finally {
 
 			clientCredentials.clean();
 			payload.clean();
 		}
+	}
+
+	private Response createUnexpectedErrorResponse(final UserSession userSession, final NewCookie sessionCookie) {
+
+		if (!ProfilServerApp.STAGE_DEV.equals(stage)) {
+
+			userSession.clearSessionId();
+		}
+
+		AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
+		return Response.serverError()
+			.entity(new ResponsePayload(
+				MessagePayload.error("Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de"),
+				authenticatedUser))
+			.cookie(sessionCookie).build();
+	}
+
+	private Response createProfilServerRuntimeErrorResponse(final UserSession userSession, final NewCookie sessionCookie, final ProfilserverRuntimeException e) {
+
+		if (!ProfilServerApp.STAGE_DEV.equals(stage)) {
+
+			userSession.clearSessionId();
+		}
+		AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
+
+		return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
+			.cookie(sessionCookie).build();
 	}
 
 	/**
@@ -178,11 +201,6 @@ public class ProfilResource {
 
 		UserSession userSession = getUserSession();
 
-		if (!STAGE_DEV.equals(stage)) {
-
-			userSession.clearSessionId();
-		}
-
 		NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
 
 		String expectedNonce = UUID.randomUUID().toString();
@@ -192,9 +210,10 @@ public class ProfilResource {
 
 			validationDelegate.check(payload, ProfileDataPayload.class);
 
-			ChangeProfileDataPayload changePasswordPayload = new ChangeProfileDataPayload(clientCredentials, payload);
+			ChangeProfileDataPayload changePasswordPayload = ChangeProfileDataPayload.create(clientCredentials, payload,
+				userSession.getUuid());
 
-			Response authProviderResponse = profileRestClient.changeData(userSession.getUuid(), changePasswordPayload);
+			Response authProviderResponse = profileRestClient.changeData(changePasswordPayload);
 
 			LOG.debug("Response-Status={}", authProviderResponse.getStatus());
 
@@ -240,32 +259,108 @@ public class ProfilResource {
 
 		} catch (ProfilserverRuntimeException e) {
 
-			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
-
 			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage());
 
-			return Response.serverError().entity(new ResponsePayload(MessagePayload.error(e.getMessage()), authenticatedUser))
-				.cookie(sessionCookie).build();
+			return createProfilServerRuntimeErrorResponse(userSession, sessionCookie, e);
 
 		} catch (Exception e) {
 
 			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
 				getStringAbbreviated(userSession.getUuid()), e.getMessage(), e);
 
-			// Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de
-
-			AuthenticatedUser authenticatedUser = authentiatedUserService.createAuthenticatedUser(userSession, null);
-			return Response.serverError()
-				.entity(new ResponsePayload(
-					MessagePayload.error("Es ist ein Fehler aufgetreten. Bitte senden Sie eine Mail an info@egladil.de"),
-					authenticatedUser))
-				.cookie(sessionCookie).build();
+			return createUnexpectedErrorResponse(userSession, sessionCookie);
 
 		} finally {
 
 			clientCredentials.clean();
 		}
+	}
+
+	@DELETE
+	@Path("/profile")
+	@PermitAll
+	public Response deleteAccount() {
+
+		UserSession userSession = getUserSession();
+
+		String expectedNonce = UUID.randomUUID().toString();
+		OAuthClientCredentials clientCredentials = OAuthClientCredentials.create(clientId, clientSecret, expectedNonce);
+
+		try {
+
+			SelectProfilePayload selectProfilePayload = SelectProfilePayload.create(clientCredentials, userSession.getUuid());
+
+			Response authProviderResponse = profileRestClient.deleteProfile(selectProfilePayload);
+
+			LOG.debug("Response-Status={}", authProviderResponse.getStatus());
+
+			ResponsePayload responsePayload = authProviderResponse.readEntity(ResponsePayload.class);
+			String nonce = (String) responsePayload.getData();
+
+			if (!expectedNonce.equals(nonce)) {
+
+				LOG.warn(LogmessagePrefixes.BOT + "angefragter Entdpoint hat das nonce geändert: expected={}, actual={}",
+					expectedNonce, nonce);
+
+				throw new ProfilserverRuntimeException("Der authprovider konnte nicht erreich werden");
+
+			}
+
+			if (authProviderResponse.getStatus() == 200) {
+
+				profilSessionService.invalidate(userSession.getSessionId());
+				return Response
+					.ok(ResponsePayload.messageOnly(MessagePayload.info("Ihr Benutzerkonto wurde erfolgreich gelöscht.")))
+					.cookie(CommonHttpUtils.createSessionInvalidatedCookie(ProfilServerApp.CLIENT_COOKIE_PREFIX)).build();
+
+			} else {
+
+				LOG.error("idRef={} - UUID={}: authprovider antwortete mit dem Status {}",
+					getStringAbbreviated(userSession.getIdReference()),
+					getStringAbbreviated(userSession.getUuid()), authProviderResponse.getStatus());
+				throw new ProfilserverRuntimeException("Die Daten konnten wegen eines Serverfehlers nicht geändert werden.");
+
+			}
+
+		} catch (ProfilserverRuntimeException e) {
+
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage());
+
+			NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
+
+			return createProfilServerRuntimeErrorResponse(userSession, sessionCookie, e);
+
+		} catch (Exception e) {
+
+			LOG.error("idRef={} - UUID={}: {}", getStringAbbreviated(userSession.getIdReference()),
+				getStringAbbreviated(userSession.getUuid()), e.getMessage());
+
+			NewCookie sessionCookie = authentiatedUserService.createSessionCookie(userSession.getSessionId());
+
+			return createUnexpectedErrorResponse(userSession, sessionCookie);
+
+		} finally {
+
+			clientCredentials.clean();
+		}
+	}
+
+	@GET
+	@Path("/profile")
+	@PermitAll
+	public Response reloadUser() {
+
+		UserSession userSession = getUserSession();
+
+		User user = userService.getUser(userSession.getUuid());
+
+		AuthenticatedUser responseData = authentiatedUserService.createAuthenticatedUser(userSession, user);
+
+		ResponsePayload responsePayload = new ResponsePayload(MessagePayload.info("OK"), responseData);
+
+		return Response.ok(responsePayload).build();
 	}
 
 	private UserSession getUserSession() {

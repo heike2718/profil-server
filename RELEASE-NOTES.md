@@ -1,5 +1,9 @@
 # authprovider Release Notes
 
+__Release 1.3.0__
+
+[REST Schnittstellen zum Löschen eines Benutzerkontos](https://github.com/heike2718/profil-server/issues/9)
+
 __Release 1.2.0__
 
 [session expiration 0 s](https://github.com/heike2718/profil-server/issues/3)
