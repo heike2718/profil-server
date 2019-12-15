@@ -15,6 +15,8 @@ import javax.ws.rs.ext.Provider;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import de.egladil.web.profil_server.ProfilServerApp;
+
 /**
  * SecureHeadersFilter
  */
@@ -29,6 +31,9 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 	@ConfigProperty(name = "cors.access-control-max-age")
 	int accessControlMaxAge;
+
+	@ConfigProperty(name = "stage")
+	String stage;
 
 	@Override
 	public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) throws IOException {
@@ -94,6 +99,23 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 			responseContext.getHeaders().add(CONTENT_SECURITY_POLICY, "default-src 'self'; ");
 		}
+
+		if (!ProfilServerApp.STAGE_DEV.equals(stage) && headers.get("Strict-Transport-Security") == null) {
+
+			headers.add("Strict-Transport-Security", "max-age=63072000; includeSubdomains");
+
+		}
+
+		if (headers.get("X-XSS-Protection") == null) {
+
+			headers.add("X-XSS-Protection", "1; mode=block");
+		}
+
+		if (headers.get("X-Frame-Options") == null) {
+
+			headers.add("X-Frame-Options", "deny");
+		}
+
 	}
 
 }

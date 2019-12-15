@@ -70,13 +70,6 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 				}
 
 				String csrfToken = requestContext.getHeaderString(CSRF_TOKEN_HEADER);
-
-				if (csrfToken == null) {
-
-					LOG.warn(LogmessagePrefixes.BOT + "Aufruf ohne CSRF-Token: path=", path);
-					throw new AuthException("Keine Berechtigung");
-				}
-
 				String sessionId = CommonHttpUtils.getSessionId(requestContext, stage, ProfilServerApp.CLIENT_COOKIE_PREFIX);
 
 				if (sessionId != null) {
@@ -90,11 +83,7 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
 					}
 
-					if (!csrfToken.equals(userSession.getCsrfToken())) {
-
-						LOG.warn(LogmessagePrefixes.BOT + "Aufruf mit falshem CSRF-Token: path=", path);
-						throw new AuthException("Keine Berechtigung");
-					}
+					checkCsrfToken(path, method, csrfToken, userSession);
 
 					UserSession refreshedSession = sessionService.refresh(sessionId);
 					ProfilSecurityContext securityContext = new ProfilSecurityContext(refreshedSession);
@@ -108,6 +97,27 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 		}
 	}
 
+	private void checkCsrfToken(final String path, final String method, final String csrfToken, final UserSession userSession) {
+
+		if (!csrfTokenRequired(method)) {
+
+			return;
+		}
+
+		if (csrfToken == null) {
+
+			LOG.warn(LogmessagePrefixes.BOT + "Aufruf ohne CSRF-Token: path=", path);
+			throw new AuthException("Keine Berechtigung");
+		}
+
+		if (!csrfToken.equals(userSession.getCsrfToken())) {
+
+			LOG.warn(LogmessagePrefixes.BOT + "Aufruf mit falshem CSRF-Token: path=", path);
+			throw new AuthException("Keine Berechtigung");
+		}
+
+	}
+
 	private void logCookies(final ContainerRequestContext requestContext) {
 
 		final Map<String, Cookie> cookies = requestContext.getCookies();
@@ -119,6 +129,11 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 			System.out.println("[k=" + key + ", value=" + cookie.getValue() + "]");
 		});
 		System.out.println("==== End read cookies ====");
+	}
+
+	private boolean csrfTokenRequired(final String method) {
+
+		return !"GET".equals(method);
 	}
 
 	private boolean needsSession(final String path) {
