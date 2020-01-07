@@ -5,7 +5,10 @@
 package de.egladil.web.profil_server.filter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
@@ -40,6 +43,8 @@ import de.egladil.web.profil_server.service.ProfilSessionService;
 public class AuthorizationFilter implements ContainerRequestFilter {
 
 	private static final String CSRF_TOKEN_HEADER = "X-XSRF-TOKEN";
+
+	private static final List<String> AUTHORIZED_PATHS = Arrays.asList(new String[] { "/profiles", "/validators" });
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuthorizationFilter.class);
 
@@ -138,6 +143,8 @@ public class AuthorizationFilter implements ContainerRequestFilter {
 
 	private boolean needsSession(final String path) {
 
-		return path.toLowerCase().startsWith("/profiles");
+		Optional<String> optPath = AUTHORIZED_PATHS.stream().filter(p -> path.toLowerCase().startsWith(p)).findFirst();
+
+		return optPath.isPresent();
 	}
 }

@@ -40,6 +40,8 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		final MultivaluedMap<String, Object> headers = responseContext.getHeaders();
 
+		addCORSHeaders(headers);
+
 		if (headers.get("Cache-Control") == null) {
 
 			headers.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -65,34 +67,9 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 			headers.add("X-Powered-By", "Ponder Stibbons");
 		}
 
-		if (headers.get("Access-Control-Allow-Origin") == null) {
-
-			headers.add("Access-Control-Allow-Origin", allowOriginHeaderValue);
-		}
-
 		if (headers.get("Vary") == null) {
 
 			headers.add("Vary", "Origin");
-		}
-
-		if (headers.get("Access-Control-Allow-Credentials") == null) {
-
-			headers.add("Access-Control-Allow-Credentials", "true");
-		}
-
-		if (headers.get("Access-Control-Allow-Methods") == null) {
-
-			headers.add("Access-Control-Allow-Methods", "POST, PUT, GET, HEAD, OPTIONS, DELETE");
-		}
-
-		if (headers.get("Access-Control-Max-Age") == null) {
-
-			headers.add("Access-Control-Max-Age", "" + accessControlMaxAge);
-		}
-
-		if (headers.get("Access-Control-Allow-Headers") == null) {
-
-			headers.add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With, Authorization,X-SESSIONID");
 		}
 
 		if (headers.get(CONTENT_SECURITY_POLICY) == null) {
@@ -116,6 +93,46 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 			headers.add("X-Frame-Options", "deny");
 		}
 
+	}
+
+	/**
+	 * Theoretisch könnte man dies auch über die Quarkus-Konfigurationsprameter machen. Es hat sich aber herausgestellt, dass dies
+	 * zu
+	 * volatil ist und die Browser mit den Konstanten nicht gut zurecht kommen und CORS-Blockaden erzeugen. Daher bitte nicht in
+	 * application.properties mit den Quarkus-CORS-Parametern konfigurieren, sondern hier.
+	 *
+	 * @param headers
+	 */
+	private void addCORSHeaders(final MultivaluedMap<String, Object> headers) {
+
+		if (headers.get("Access-Control-Allow-Origin") == null) {
+
+			headers.add("Access-Control-Allow-Origin", allowOriginHeaderValue);
+		}
+
+		if (headers.get("Access-Control-Allow-Credentials") == null) {
+
+			headers.add("Access-Control-Allow-Credentials", "true");
+		}
+
+		// Achtung: mod-security verbietet standardmäßig PUT und DELETE.
+		// Daher parallel in /etc/apache2/sites-available/opa-wetterwachs.conf die rule 911100 für profil-server entfernen,
+		// sonst bekommt man 403
+		if (headers.get("Access-Control-Allow-Methods") == null) {
+
+			headers.add("Access-Control-Allow-Methods", "POST, PUT, GET, HEAD, OPTIONS, DELETE");
+		}
+
+		if (headers.get("Access-Control-Max-Age") == null) {
+
+			headers.add("Access-Control-Max-Age", "" + accessControlMaxAge);
+		}
+
+		if (headers.get("Access-Control-Allow-Headers") == null) {
+
+			headers.add("Access-Control-Allow-Headers",
+				"Content-Type, Accept, X-Requested-With, Authorization,X-SESSIONID,X-XSRF-TOKEN");
+		}
 	}
 
 }
