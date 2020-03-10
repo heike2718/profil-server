@@ -6,6 +6,7 @@ package de.egladil.web.profil_server.error;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.NoContentException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
@@ -37,6 +38,11 @@ public class ProfilServerExceptionMapper implements ExceptionMapper<Exception> {
 
 	@Override
 	public Response toResponse(final Exception exception) {
+
+		if (exception instanceof NoContentException) {
+
+			return Response.status(204).build();
+		}
 
 		if (exception instanceof AuthException) {
 
