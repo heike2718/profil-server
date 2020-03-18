@@ -57,4 +57,55 @@ public class ResourceOwnerDaoImpl implements ResourceOwnerDao {
 
 		return Optional.of(resourceOwner);
 	}
+
+	@Override
+	public Optional<ResourceOwner> findByEmailButNotWithUUID(final String email, final String uuid) {
+
+		if (email == null) {
+
+			throw new IllegalArgumentException("email null");
+		}
+
+		List<ResourceOwner> trefferliste = entityManager.createNamedQuery(ResourceOwner.FIND_OTHER_BY_EMAIL, ResourceOwner.class)
+			.setParameter("uuid", uuid)
+			.setParameter("email", email.toLowerCase())
+			.getResultList();
+
+		if (trefferliste.isEmpty()) {
+
+			return Optional.empty();
+		}
+
+		if (trefferliste.size() > 1) {
+
+			throw new ProfilserverRuntimeException("Mehr als ein Eintrag mit EMAIL='" + email + "' in tabelle users");
+		}
+		return Optional.of(trefferliste.get(0));
+	}
+
+	@Override
+	public Optional<ResourceOwner> findByLoginNameButNotWithUUID(final String loginName, final String uuid) {
+
+		if (loginName == null) {
+
+			throw new IllegalArgumentException("loginName null");
+		}
+
+		List<ResourceOwner> trefferliste = entityManager
+			.createNamedQuery(ResourceOwner.FIND_OTHER_BY_LOGINNAME, ResourceOwner.class)
+			.setParameter("uuid", uuid)
+			.setParameter("loginName", loginName)
+			.getResultList();
+
+		if (trefferliste.isEmpty()) {
+
+			return Optional.empty();
+		}
+
+		if (trefferliste.size() > 1) {
+
+			throw new ProfilserverRuntimeException("Mehr als ein Eintrag mit LOGIN_NAME='" + loginName + "' in tabelle users");
+		}
+		return Optional.of(trefferliste.get(0));
+	}
 }
