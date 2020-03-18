@@ -1,5 +1,9 @@
 # authprovider Release Notes
 
+__Release 2.0.0__:
+
+update to quarkus-1.3.0-Final
+
 __Release 1.3.1__:
 
 CVE-2020-8840: upgrade to [hewi-java-commons version 1.4.4](https://github.com/heike2718/hewi-java-commons/releases/tag/1.4.4)
