@@ -7,15 +7,15 @@ package de.egladil.web.profil_server.filter;
 import java.io.IOException;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import de.egladil.web.profil_server.ProfilServerApp;
+import de.egladil.web.profil_server.config.ConfigService;
 
 /**
  * SecureHeadersFilter
@@ -26,14 +26,8 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 	private static final String CONTENT_SECURITY_POLICY = "Content-Security-Policy";
 
-	@ConfigProperty(name = "cors.allow-origin")
-	String allowOriginHeaderValue;
-
-	@ConfigProperty(name = "cors.access-control-max-age")
-	int accessControlMaxAge;
-
-	@ConfigProperty(name = "stage")
-	String stage;
+	@Inject
+	ConfigService config;
 
 	@Override
 	public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) throws IOException {
@@ -77,7 +71,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 			responseContext.getHeaders().add(CONTENT_SECURITY_POLICY, "default-src 'self'; ");
 		}
 
-		if (!ProfilServerApp.STAGE_DEV.equals(stage) && headers.get("Strict-Transport-Security") == null) {
+		if (!ProfilServerApp.STAGE_DEV.equals(config.getStage()) && headers.get("Strict-Transport-Security") == null) {
 
 			headers.add("Strict-Transport-Security", "max-age=63072000; includeSubdomains");
 
@@ -107,7 +101,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		if (headers.get("Access-Control-Allow-Origin") == null) {
 
-			headers.add("Access-Control-Allow-Origin", allowOriginHeaderValue);
+			headers.add("Access-Control-Allow-Origin", config.getAllowedOrigin());
 		}
 
 		if (headers.get("Access-Control-Allow-Credentials") == null) {
@@ -125,7 +119,7 @@ public class SecureHeadersFilter implements ContainerResponseFilter {
 
 		if (headers.get("Access-Control-Max-Age") == null) {
 
-			headers.add("Access-Control-Max-Age", "" + accessControlMaxAge);
+			headers.add("Access-Control-Max-Age", "" + config.getAccessControlMaxAge());
 		}
 
 		if (headers.get("Access-Control-Allow-Headers") == null) {
