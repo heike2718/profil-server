@@ -10,6 +10,7 @@ import java.util.List;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
@@ -18,11 +19,11 @@ import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Provider;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.egladil.web.commons_net.utils.CommonHttpUtils;
+import de.egladil.web.profil_server.config.ConfigService;
 import de.egladil.web.profil_server.error.AuthException;
 
 /**
@@ -38,11 +39,8 @@ public class OriginReferrerFilter implements ContainerRequestFilter {
 
 	private static final List<String> NO_CONTENT_PATHS = Arrays.asList(new String[] { "/favicon.ico" });
 
-	@ConfigProperty(name = "block.on.missing.origin.referer")
-	boolean blockOnMissingOriginReferer;
-
-	@ConfigProperty(name = "target.origin")
-	String targetOrigin;
+	@Inject
+	ConfigService config;
 
 	@Override
 	public void filter(final ContainerRequestContext requestContext) throws IOException {
@@ -70,7 +68,7 @@ public class OriginReferrerFilter implements ContainerRequestFilter {
 
 			final String details = "Header Origin UND Referer fehlen";
 
-			if (blockOnMissingOriginReferer) {
+			if (config.isBlockOnMissingOriginReferer()) {
 
 				logErrorAndThrow(details, requestContext);
 			}
@@ -96,6 +94,8 @@ public class OriginReferrerFilter implements ContainerRequestFilter {
 			return;
 		}
 
+		final String targetOrigin = config.getTargetOrigin();
+
 		if (targetOrigin != null) {
 
 			List<String> allowedOrigins = Arrays.asList(targetOrigin.split(","));
@@ -103,7 +103,7 @@ public class OriginReferrerFilter implements ContainerRequestFilter {
 			if (!allowedOrigins.contains(extractedValue)) {
 
 				final String details = "targetOrigin != extractedOrigin: [targetOrigin=" + targetOrigin
-					+ ", extractedOriginOrReferer="
+					+ ", extractedOrigin="
 					+ extractedValue + "]";
 				logErrorAndThrow(details, requestContext);
 			}
