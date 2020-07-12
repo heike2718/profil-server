@@ -1,5 +1,13 @@
 # authprovider Release Notes
 
+__Release 2.1.0__:
+
+* Umstellung jwt auf authorization token grant flow, damit ein JWT niemals im Browser
+  ankommt
+
+* update to quarkus-1.6.0-Final
+
+
 __Release 2.0.0__:
 
 update to quarkus-1.3.0-Final
