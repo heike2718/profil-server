@@ -61,8 +61,7 @@ public class OriginReferrerFilter implements ContainerRequestFilter {
 		final String origin = requestContext.getHeaderString("Origin");
 		final String referer = requestContext.getHeaderString("Referer");
 
-		LOG.info("Origin = [{}], Referer=[{}]", origin, referer);
-		System.out.println("Origin=[" + origin + "], referer=[" + referer + "]");
+		LOG.debug("Origin = [{}], Referer=[{}]", origin, referer);
 
 		if (StringUtils.isBlank(origin) && StringUtils.isBlank(referer)) {
 

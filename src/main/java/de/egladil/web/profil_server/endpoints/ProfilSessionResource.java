@@ -35,6 +35,7 @@ import de.egladil.web.profil_server.error.AuthException;
 import de.egladil.web.profil_server.service.AuthenticatedUserService;
 import de.egladil.web.profil_server.service.ClientAccessTokenService;
 import de.egladil.web.profil_server.service.ProfilSessionService;
+import de.egladil.web.profil_server.service.TokenExchangeService;
 import de.egladil.web.profil_server.service.UserService;
 
 /**
@@ -68,6 +69,9 @@ public class ProfilSessionResource {
 	@Inject
 	UserService userService;
 
+	@Inject
+	TokenExchangeService tokenExchangeService;
+
 	@GET
 	@Path("/login")
 	@PermitAll
@@ -92,7 +96,14 @@ public class ProfilSessionResource {
 	@Path("/session")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@PermitAll
-	public Response createSession(final String jwt) {
+	public Response getTheJwtAndCreateSession(final String oneTimeToken) {
+
+		String jwt = tokenExchangeService.exchangeTheOneTimeToken(oneTimeToken);
+
+		return this.createTheSessionWithJWT(jwt);
+	}
+
+	private Response createTheSessionWithJWT(final String jwt) {
 
 		UserSession userSession = profilSessionService.createUserSession(jwt);
 		NewCookie sessionCookie = authenticatedUserService.createSessionCookie(userSession.getSessionId());
